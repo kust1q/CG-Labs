@@ -27,6 +27,7 @@ namespace graphics::internal {
 namespace {
 
 VkInstance vk_instance;
+VkDebugUtilsMessengerEXT vk_messenger;
 uint32_t vk_api_version;
 VkSurfaceKHR vk_surface;
 
@@ -405,10 +406,12 @@ bool initialize(GLFWwindow* const window) {
 
 	auto ibr = ib.require_api_version(VK_MAKE_VERSION(1, 1, 0))
 				 .request_validation_layers()
+				 .use_default_debug_messenger()
 				 .build();
 
 	auto vkb_instance = ibr.value();
 	vk_instance = vkb_instance.instance;
+	vk_messenger = vkb_instance.debug_messenger;
 	vk_api_version = vkb_instance.api_version;
 
 	if (glfwCreateWindowSurface(vk_instance, window, nullptr, &vk_surface) != VK_SUCCESS) {
@@ -733,6 +736,10 @@ void shutdown() {
 	vkDestroyDevice(context.device, nullptr);
 
 	vkDestroySurfaceKHR(vk_instance, vk_surface, nullptr);
+	auto vkDestroyDebugUtilsMessenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(vk_instance, "vkDestroyDebugUtilsMessengerEXT"));
+	if (vkDestroyDebugUtilsMessenger != nullptr) {
+		vkDestroyDebugUtilsMessenger(vk_instance, vk_messenger, nullptr);
+	}
 	vkDestroyInstance(vk_instance, nullptr);
 }
 

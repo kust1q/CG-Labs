@@ -1,23 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
 include(FetchContent)
 
-project(vulkan-starter-app LANGUAGES C CXX)
+project(CGlabs LANGUAGES C CXX)
 
 add_executable(${PROJECT_NAME} source/main.cpp source/graphics_internal.cpp source/application.cpp)
 
-if(LINUX)
-	target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
-elseif(APPLE)
-	target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
-elseif(MSVC)
-	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /wd4201)
-	target_link_options(${PROJECT_NAME} PRIVATE /subsystem:windows /entry:mainCRTStartup)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE -D_USE_MATH_DEFINES)
-else()
-	message(FATAL_ERROR "${CMAKE_SYSTEM_NAME} is not supported")
-endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders/")
 
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED TRUE CXX_STANDARD 20)
+
 
 FetchContent_Declare(
 	glfw
@@ -98,8 +91,8 @@ if(GLSLC_FOUND)
 	# To compile shader file, use compile_shader function with a file name
 	# of a shader inside shaders directory. See example below:
 
-	# compile_shader(example.vert)
-	# compile_shader(example.frag)
+	compile_shader(triangle.vert)
+	compile_shader(triangle.frag)
 
 	add_custom_target(shaders DEPENDS ${_SHADER_BINARIES})
 	add_dependencies(${PROJECT_NAME} shaders)
