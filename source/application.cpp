@@ -1,7 +1,5 @@
 #include "application.hpp"
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <vector>
@@ -27,7 +25,29 @@ namespace {
 
 	struct PushConstants {
 		glm::mat4 mvp;
+		glm::vec4 tint;
 	};
+
+	struct SceneState {
+		int projection = 0;
+		float fov = 60.0f;
+		float ortho_size = 2.0f;
+
+		glm::vec3 position = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 rotation = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+		glm::vec3 color = { 1.0f, 1.0f, 1.0f };
+
+		bool anim_playing = true;
+		float anim_speed = 1.0f;     // радиан фазы в секунду
+		float anim_radius = 1.0f;    // радиус окружности в плоскости XZ
+		float anim_height = 0.5f;    // амплитуда колебаний по Y
+		float anim_spin = 90.0f;     // вращение вокруг своей оси, градусов на радиан фазы
+		float anim_phase = 0.0f;
+	};
+
+	SceneState scene;
+	double last_time = -1.0;
 
 	std::vector<uint32_t> loadSpirv(const char* path) {
 		std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -266,22 +286,84 @@ void shutdown() {
 	vkDestroyPipelineLayout(context.device, vk_pipeline_layout, nullptr);
 }
 
-void update([[maybe_unused]] double time) {
-	ImGui::ShowDemoWindow();
+void update(double time) {
+	const float dt = last_time < 0.0 ? 0.0f : static_cast<float>(time - last_time);
+	last_time = time;
+
+	if (scene.anim_playing) {
+		scene.anim_phase += dt * scene.anim_speed;
+	}
+
+	ImGui::Begin("Sphere");
+
+	ImGui::SeparatorText("Projection");
+	ImGui::RadioButton("Perspective", &scene.projection, 0);
+	ImGui::SameLine();
+	ImGui::RadioButton("Orthographic", &scene.projection, 1);
+	if (scene.projection == 0) {
+		ImGui::SliderFloat("FOV", &scene.fov, 20.0f, 120.0f);
+	} else {
+		ImGui::SliderFloat("Size", &scene.ortho_size, 0.5f, 10.0f);
+	}
+
+	ImGui::SeparatorText("Transform");
+	ImGui::DragFloat3("Position", &scene.position.x, 0.01f);
+	ImGui::DragFloat3("Rotation", &scene.rotation.x, 1.0f);
+	ImGui::DragFloat3("Scale", &scene.scale.x, 0.01f, 0.01f, 10.0f);
+
+	ImGui::SeparatorText("Color");
+	ImGui::ColorEdit3("Tint", &scene.color.x);
+
+	ImGui::SeparatorText("Animation");
+	if (ImGui::Button(scene.anim_playing ? "Pause" : "Play")) {
+		scene.anim_playing = !scene.anim_playing;
+	}
+	ImGui::SliderFloat("Speed", &scene.anim_speed, -5.0f, 5.0f);
+	ImGui::SliderFloat("Radius", &scene.anim_radius, 0.0f, 3.0f);
+	ImGui::SliderFloat("Height", &scene.anim_height, 0.0f, 2.0f);
+	ImGui::SliderFloat("Spin", &scene.anim_spin, -360.0f, 360.0f);
+
+	if (ImGui::Button("Reset")) {
+		scene = SceneState{};
+	}
+
+	ImGui::End();
 }
 
 void render(const graphics::internal::FrameData& fd) {
 	auto& context = graphics::internal::context;
 
 	const float aspect = static_cast<float>(context.swapchain_extent.width) / static_cast<float>(context.swapchain_extent.height);
-	glm::mat4 model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 view  = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f),
+	// Траектория: окружность в плоскости XZ с колебанием по высоте на удвоенной частоте
+	const glm::vec3 trajectory = {
+		scene.anim_radius * std::cos(scene.anim_phase),
+		scene.anim_height * std::sin(2.0f * scene.anim_phase),
+		scene.anim_radius * std::sin(scene.anim_phase),
+	};
+	const float spin = scene.anim_spin * scene.anim_phase;
+
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), scene.position + trajectory);
+	model = glm::rotate(model, glm::radians(scene.rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(scene.rotation.y + spin), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(scene.rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	model = glm::scale(model, scene.scale);
+
+	glm::mat4 view  = glm::lookAt(glm::vec3(0.0f, 0.0f, 6.0f),
                                   glm::vec3(0.0f, 0.0f, 0.0f),
                                   glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 proj  = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+
+	glm::mat4 proj;
+	if (scene.projection == 0) {
+		proj = glm::perspective(glm::radians(scene.fov), aspect, 0.1f, 100.0f);
+	} else {
+		const float h = scene.ortho_size;
+		proj = glm::ortho(-h * aspect, h * aspect, -h, h, 0.1f, 100.0f);
+	}
 	proj[1][1] *= -1.0f;
+
 	PushConstants pc = {
-		.mvp = proj * view * model
+		.mvp = proj * view * model,
+		.tint = glm::vec4(scene.color, 1.0f),
 	};
 
 	const VkClearValue clear_values[] = {

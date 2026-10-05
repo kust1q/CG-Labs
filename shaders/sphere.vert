@@ -2,6 +2,7 @@
 
 layout(push_constant) uniform PushConstants {
     mat4 mvp;
+    vec4 tint;
 } pc;
 
 layout(location = 0) in vec3 in_position;
@@ -9,9 +10,8 @@ layout(location = 1) in vec3 in_color;
 layout(location = 0) out vec3 frag_color;
 
 void main() {
-    // 4. позиция вершины: vec4(x, y, z, w)
     gl_Position = pc.mvp * vec4(in_position, 1.0);
 
-    frag_color = in_color;
+    frag_color = in_color * pc.tint.rgb;
 }
 
