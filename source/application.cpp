@@ -141,7 +141,7 @@ namespace application {
 bool initialize() {
 	std::vector<Vertex> sphere_vertices;
     std::vector<uint32_t> sphere_indices;
-    generateSphere(1.0f, 32, 40, sphere_vertices, sphere_indices);
+    generateSphere(1.0f, 8, 10, sphere_vertices, sphere_indices);
 
 	createBuffer(sphere_vertices.data(), sphere_vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vk_vertex_buffer, vk_vertex_buffer_allocation);
 	createBuffer(sphere_indices.data(), sphere_indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, vk_index_buffer, vk_index_buffer_allocation);
