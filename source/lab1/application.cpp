@@ -11,7 +11,6 @@ namespace {
 	VkPipelineLayout vk_pipeline_layout;
 	VkPipeline vk_pipeline;
 
-
 	VkBuffer vk_index_buffer;
 	VkBuffer vk_vertex_buffer;
 	VmaAllocation vk_index_buffer_allocation;
@@ -39,10 +38,10 @@ namespace {
 		glm::vec3 color = { 1.0f, 1.0f, 1.0f };
 
 		bool anim_playing = true;
-		float anim_speed = 1.0f;     // радиан фазы в секунду
-		float anim_radius = 1.0f;    // радиус окружности в плоскости XZ
-		float anim_height = 0.5f;    // амплитуда колебаний по Y
-		float anim_spin = 90.0f;     // вращение вокруг своей оси, градусов на радиан фазы
+		float anim_speed = 1.0f;
+		float anim_radius = 1.0f;
+		float anim_height = 0.5f;
+		float anim_spin = 90.0f;
 		float anim_phase = 0.0f;
 	};
 
@@ -72,9 +71,9 @@ namespace {
                       const float theta = static_cast<float>(2.0 * M_PI) * j / slices;
 
                       const glm::vec3 position = {
-                              radius * std::sin(phi) * std::cos(theta), // x = r · sin(φ) · cos(θ)
-                              radius * std::cos(phi),                   // y = r · cos(φ)
-                              radius * std::sin(phi) * std::sin(theta), // z = r · sin(φ) · sin(θ)
+                              radius * std::sin(phi) * std::cos(theta),
+                              radius * std::cos(phi),
+                              radius * std::sin(phi) * std::sin(theta),
                       };
 
                       const glm::vec3 color = {
@@ -117,8 +116,6 @@ namespace {
     		.usage = VMA_MEMORY_USAGE_AUTO,
       	};
 
-
-
     	auto result = vmaCreateBuffer(graphics::internal::context.allocator, &buffer_info, &alloc_info, &buffer, &allocation, nullptr);
 		if (result != VK_SUCCESS) {
 			std::cerr << "Failed to create buffer\n";
@@ -134,7 +131,6 @@ namespace {
     	return true;
 	}
 }
-// namespace
 
 namespace application {
 
@@ -207,8 +203,8 @@ bool initialize() {
 	};
 
 	const VkVertexInputAttributeDescription attributes[] = {
-    	{ .location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, position) },   // position
-    	{ .location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, color) },   // color
+    	{ .location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, position) },
+    	{ .location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, color) },
 	};
 
 	const VkPipelineVertexInputStateCreateInfo vertex_input = {
@@ -228,7 +224,6 @@ bool initialize() {
     	.polygonMode = VK_POLYGON_MODE_FILL, .cullMode = VK_CULL_MODE_BACK_BIT, .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
     	.lineWidth = 1.0f,
 	};
-
 
 	const VkPipelineMultisampleStateCreateInfo multisample = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
@@ -334,7 +329,6 @@ void render(const graphics::internal::FrameData& fd) {
 	auto& context = graphics::internal::context;
 
 	const float aspect = static_cast<float>(context.swapchain_extent.width) / static_cast<float>(context.swapchain_extent.height);
-	// Траектория: окружность в плоскости XZ с колебанием по высоте на удвоенной частоте
 	const glm::vec3 trajectory = {
 		scene.anim_radius * std::cos(scene.anim_phase),
 		scene.anim_height * std::sin(2.0f * scene.anim_phase),
@@ -413,4 +407,4 @@ void render(const graphics::internal::FrameData& fd) {
 	vkCmdEndRenderPass(fd.command_buffer);
 }
 
-} // namespace application
+}

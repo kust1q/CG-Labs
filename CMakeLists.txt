@@ -3,14 +3,12 @@ include(FetchContent)
 
 project(CGlabs LANGUAGES C CXX)
 
-add_executable(${PROJECT_NAME} source/main.cpp source/graphics_internal.cpp source/application.cpp)
+add_library(engine STATIC source/graphics_internal.cpp)
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders/" GLM_FORCE_DEPTH_ZERO_TO_ONE)
-
-
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED TRUE CXX_STANDARD 20)
-
+target_compile_definitions(engine PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_options(engine PUBLIC -Wall -Wextra -Wno-missing-field-initializers)
+target_compile_features(engine PUBLIC cxx_std_20)
+target_include_directories(engine PUBLIC ${CMAKE_SOURCE_DIR}/source)
 
 FetchContent_Declare(
 	glfw
@@ -57,7 +55,7 @@ FetchContent_MakeAvailable(
 	glm
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(engine PUBLIC
 	glfw
 	Vulkan::Vulkan
 	vk-bootstrap::vk-bootstrap
@@ -65,8 +63,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	glm::glm
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
-target_sources(${PROJECT_NAME} PRIVATE
+target_include_directories(engine PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+target_sources(engine PRIVATE
 	${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 	${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
 	${imgui_SOURCE_DIR}/imgui.cpp
@@ -76,32 +74,34 @@ target_sources(${PROJECT_NAME} PRIVATE
 	${imgui_SOURCE_DIR}/imgui_demo.cpp
 )
 
-# Compile shaders
-find_program(GLSLC_FOUND glslc)
-if(GLSLC_FOUND)
-	set(_SHADER_BINARIES)
+find_program(GLSLC glslc)
 
-	macro(compile_shader SHADER_FILE)
-		set(SHADER_SOURCE ${CMAKE_SOURCE_DIR}/shaders/${SHADER_FILE})
-		set(SHADER_BINARY ${SHADER_FILE}.spv)
-		set(SHADER_BINARY_PATH ${CMAKE_SOURCE_DIR}/shaders/${SHADER_BINARY})
+function(add_lab NAME)
+	cmake_parse_arguments(LAB "" "" "SHADERS" ${ARGN})
 
-		add_custom_command(
-			OUTPUT ${SHADER_BINARY_PATH}
-			COMMAND glslc ${SHADER_SOURCE} -o ${SHADER_BINARY_PATH}
-			DEPENDS ${SHADER_SOURCE}
-			COMMENT "Compiling ${SHADER_FILE} shader"
-		)
+	add_executable(${NAME} source/main.cpp source/${NAME}/application.cpp)
+	target_link_libraries(${NAME} PRIVATE engine)
+	target_compile_definitions(${NAME} PRIVATE SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders/${NAME}/")
 
-		list(APPEND _SHADER_BINARIES ${SHADER_BINARY_PATH})
-	endmacro()
+	if(GLSLC)
+		set(SHADER_BINARIES)
+		foreach(SHADER_FILE ${LAB_SHADERS})
+			set(SHADER_SOURCE ${CMAKE_SOURCE_DIR}/shaders/${NAME}/${SHADER_FILE})
+			set(SHADER_BINARY ${SHADER_SOURCE}.spv)
 
-	# To compile shader file, use compile_shader function with a file name
-	# of a shader inside shaders directory. See example below:
+			add_custom_command(
+				OUTPUT ${SHADER_BINARY}
+				COMMAND ${GLSLC} ${SHADER_SOURCE} -o ${SHADER_BINARY}
+				DEPENDS ${SHADER_SOURCE}
+				COMMENT "Compiling ${NAME}/${SHADER_FILE} shader"
+			)
+			list(APPEND SHADER_BINARIES ${SHADER_BINARY})
+		endforeach()
 
-	compile_shader(sphere.vert)
-	compile_shader(sphere.frag)
+		add_custom_target(${NAME}_shaders DEPENDS ${SHADER_BINARIES})
+		add_dependencies(${NAME} ${NAME}_shaders)
+	endif()
+endfunction()
 
-	add_custom_target(shaders DEPENDS ${_SHADER_BINARIES})
-	add_dependencies(${PROJECT_NAME} shaders)
-endif()
+add_lab(lab1 SHADERS sphere.vert sphere.frag)
+add_lab(lab2 SHADERS lit.vert lit.frag marker.vert marker.frag)
