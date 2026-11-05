@@ -62,7 +62,11 @@ void main() {
 
     vec3 color = scene.ambient.rgb * object.albedo.rgb;
 
-    color += blinnPhong(N, V, normalize(-scene.dir_light_direction.xyz), scene.dir_light_color.rgb);
+    const float dir_length2 = dot(scene.dir_light_direction.xyz, scene.dir_light_direction.xyz);
+    if (dir_length2 > 1e-8) {
+        const vec3 L = -scene.dir_light_direction.xyz * inversesqrt(dir_length2);
+        color += blinnPhong(N, V, L, scene.dir_light_color.rgb);
+    }
 
     for (uint i = 0; i < scene.point_light_count; ++i) {
         const vec3 to_light = point_lights[i].position.xyz - in_world_position;

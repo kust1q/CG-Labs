@@ -63,3 +63,35 @@ because relative paths are used.
 `CMakeLists.txt` has a build recipe for compiling shader files
 along with an application. Look for a comment in this file to see
 how to compile your shaders.
+
+### Lab 3: Texture mapping
+
+Lab 3 builds on Lab 2 and implements additional tasks 1 and 2 from
+`labs/Lab #3 Texture mapping.pdf`. It needs **libpng** development headers/libraries
+and **glslc** in addition to the dependencies above.
+
+```bash
+cmake --preset debug
+cmake --build build-debug --target lab3 --parallel
+./build-debug/lab3
+```
+
+Alternatively, `make lab3` builds and runs it.
+
+- **Sphere material / Floor material → Texture** selects one of six PNG textures
+  independently for each model. **Texture tint** modulates its base color.
+- **Sphere sampling → Animated sampling** toggles the effect through fragment
+  shader push constants. **Effect speed**, **Effect strength**, and **UV scale**
+  control animated UV distortion, multiple samples of the same image, and color
+  modulation. Set speed to zero to freeze the effect. The floor uses ordinary sampling.
+- The sphere's movement can be paused under **Sphere → Animation** independently
+  of the texture effect. Camera and lighting controls are inherited from Lab 2.
+
+Each texture owns a descriptor set containing an image/sampler and the shared
+dynamic model uniform buffer. A dynamic offset selects the current model.
+Texture images, vertex buffers, and index buffers are uploaded to device-local
+memory through staging buffers.
+
+The six original textures are included in `assets/lab3/` and loaded from disk with
+libpng at startup. Optionally regenerate them with
+`python3 assets/lab3/generate_textures.py`.

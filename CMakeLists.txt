@@ -105,3 +105,8 @@ endfunction()
 
 add_lab(lab1 SHADERS sphere.vert sphere.frag)
 add_lab(lab2 SHADERS lit.vert lit.frag marker.vert marker.frag)
+
+find_package(PNG REQUIRED)
+add_lab(lab3 SHADERS lit.vert lit.frag marker.vert marker.frag)
+target_link_libraries(lab3 PRIVATE PNG::PNG)
+target_compile_definitions(lab3 PRIVATE TEXTURE_DIR="${CMAKE_SOURCE_DIR}/assets/lab3/")
