@@ -348,7 +348,7 @@ namespace {
 		return true;
 	}
 
-	bool createGraphicsPipeline(const char* vert_path, const char* frag_path, VkPipelineLayout layout, VkPipeline& pipeline) {
+	bool createGraphicsPipeline(const char* vert_path, const char* frag_path, VkPipelineLayout layout, VkPipeline& pipeline, uint32_t attribute_count = 2) {
 		auto& context = graphics::internal::context;
 
 		VkShaderModule vert_module;
@@ -381,7 +381,7 @@ namespace {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 			.vertexBindingDescriptionCount = 1,
 			.pVertexBindingDescriptions = &binding,
-			.vertexAttributeDescriptionCount = sizeof(attributes) / sizeof(attributes[0]),
+			.vertexAttributeDescriptionCount = attribute_count,
 			.pVertexAttributeDescriptions = attributes,
 		};
 		const VkPipelineInputAssemblyStateCreateInfo input_assembly = { .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
@@ -749,7 +749,7 @@ bool initialize() {
 	}
 
 	if (!createGraphicsPipeline(SHADER_DIR "lit.vert.spv", SHADER_DIR "lit.frag.spv", vk_lit_pipeline_layout, vk_lit_pipeline) ||
-	    !createGraphicsPipeline(SHADER_DIR "marker.vert.spv", SHADER_DIR "marker.frag.spv", vk_marker_pipeline_layout, vk_marker_pipeline)) {
+	    !createGraphicsPipeline(SHADER_DIR "marker.vert.spv", SHADER_DIR "marker.frag.spv", vk_marker_pipeline_layout, vk_marker_pipeline, 1)) {
 		return false;
 	}
 
